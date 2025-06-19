@@ -20,7 +20,8 @@ function newTempDir(){
 	# Intervallmäßig Screenshots erstellen (z.B. alle 2 Sekunden)
 function screenshot(){
 	# Macht den Prozess DPI-aware (wichtig bei Skalierung)
-	Add-Type -TypeDefinition @"using System;
+	Add-Type -TypeDefinition @"
+using System;
 	using System.Runtime.InteropServices;
 	public class DPI
 	{
@@ -36,9 +37,9 @@ function screenshot(){
 		Add-Type -AssemblyName System.Windows.Forms
 		Add-Type -AssemblyName System.Drawing
 
-		$time=Get-Date -Format 'yyyyMMdd_HHmmss';
+		$time=Get-Date -Format 'yyyyMMdd_HHmmss'
 		$tmp = [System.IO.Path]::GetTempPath()
-		$path="$tmp\shots\\$time.png\";
+		$path="$tmp\shots\\$time.png\"
 
 		$bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
 		$bmp = New-Object Drawing.Bitmap $bounds.Width, $bounds.Height
